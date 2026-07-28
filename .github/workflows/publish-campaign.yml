@@ -10,7 +10,9 @@ on:
       - campaign.part03
       - campaign.part04
       - campaign.part05
+      - .publish-trigger
       - .github/workflows/publish-campaign.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
