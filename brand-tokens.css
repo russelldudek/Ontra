@@ -1,1 +1,19 @@
-:root{--ontra-ink:#0d1020;--ontra-purple:#6554e8;--ontra-violet:#8b74ff;--ontra-lilac:#ece9ff;--paper:#f7f7fb;--white:#fff;--muted:#64697a;--rule:#dcdde7;--precedent:#c98a32;--max:1180px}
+:root {
+  --brand-ink: #0b1116;
+  --brand-ink-2: #151c22;
+  --brand-primary: #ff7544;
+  --brand-secondary: #19c8d1;
+  --brand-cream: #f4ece2;
+  --brand-yellow: #f5c24b;
+  --paper: #f7f5f2;
+  --white: #ffffff;
+  --text: #171927;
+  --muted: #656a78;
+  --rule: #dcdde5;
+  --dark-rule: #35414a;
+  --success: #93e6b2;
+  --warning: #f5c46c;
+  --danger: #ef8c92;
+  --max: 1240px;
+  --shadow: 0 24px 70px rgba(11,17,22,.14);
+}
