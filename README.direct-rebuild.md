@@ -1,0 +1,1 @@
+Atomic campaign publication staging marker. This file is removed by the final tree replacement.
