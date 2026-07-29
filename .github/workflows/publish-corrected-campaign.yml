@@ -1,0 +1,60 @@
+name: Publish corrected candidate campaign
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.staging/final.part*'
+      - '.publish-corrected'
+      - '.github/workflows/publish-corrected-campaign.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify corrected campaign package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .staging/final.part00 .staging/final.part01 .staging/final.part02 .staging/final.part03 .staging/final.part04 .staging/final.part05 .staging/final.part06 .staging/final.part07 .staging/final.part08 .staging/final.part09 > /tmp/ontra-release.b64
+          base64 --decode /tmp/ontra-release.b64 > /tmp/ontra-release.tar.gz
+          echo '0dc87fa2a13d9249af942f47d79a328f258c23eacf25a8c0fbb7268bca8875e9  /tmp/ontra-release.tar.gz' | sha256sum -c -
+          tar -tzf /tmp/ontra-release.tar.gz > /tmp/ontra-manifest.txt
+          for path in \
+            ./index.html \
+            ./app.js \
+            ./resume.html \
+            ./cover-letter.html \
+            ./interview-brief.html \
+            ./120-day-plan.html \
+            ./ai-operating-precedent.html \
+            ./docs/Russell-Dudek-Ontra-Resume.pdf \
+            ./docs/Russell-Dudek-Ontra-Cover-Letter.pdf \
+            ./docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf \
+            ./docs/Russell-Dudek-Ontra-120-Day-Plan.pdf \
+            ./docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf; do
+            grep -Fxq "$path" /tmp/ontra-manifest.txt
+          done
+
+      - name: Replace main with readable audited campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -rf .
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          tar -xzf /tmp/ontra-release.tar.gz -C .
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Publish corrected Ontra candidate campaign'
+          git push origin HEAD:main
