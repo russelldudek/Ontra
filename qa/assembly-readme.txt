@@ -1,0 +1,1 @@
+Final atomic tree creation follows; staging files are intentionally disposable.
