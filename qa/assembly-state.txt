@@ -1,0 +1,1 @@
+Atomic tree assembly active. Final commit replaces the entire repository tree.
