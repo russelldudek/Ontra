@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.release/source.part*'
+      - '.release/v2.part*'
       - '.release/source.sha256'
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .release/source.part* > /tmp/ontra-source.b64
+          cat .release/v2.part* > /tmp/ontra-source.b64
           base64 --decode /tmp/ontra-source.b64 > /tmp/ontra-source.tar.gz
           echo "$(cat .release/source.sha256)  /tmp/ontra-source.tar.gz" | sha256sum -c -
           mkdir -p /tmp/campaign/assets/brand /tmp/campaign/docs
@@ -64,12 +64,7 @@ jobs:
             const page = await browser.newPage();
             for (const [route, filename] of jobs) {
               await page.goto(`http://127.0.0.1:4173/${route}`, {waitUntil: 'networkidle'});
-              await page.pdf({
-                path: `/tmp/campaign/docs/${filename}`,
-                printBackground: true,
-                preferCSSPageSize: true,
-                margin: {top: '0', right: '0', bottom: '0', left: '0'}
-              });
+              await page.pdf({path: `/tmp/campaign/docs/${filename}`, printBackground: true, preferCSSPageSize: true, margin: {top: '0', right: '0', bottom: '0', left: '0'}});
             }
             await browser.close();
           })().catch(error => { console.error(error); process.exit(1); });
@@ -100,7 +95,7 @@ jobs:
           cp -a /tmp/campaign/. .
           touch .nojekyll
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.email '418982816+github-actions[bot]@users.noreply.github.com'
           git add -A
           git commit -m 'Publish corrected Ontra candidate campaign'
           git push origin HEAD:main
