@@ -4,8 +4,19 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.release/v3.part*'
-      - '.release/source.sha256'
+      - 'index.html'
+      - 'app.js'
+      - 'styles.css'
+      - 'brand-tokens.css'
+      - 'documents.css'
+      - 'resume.html'
+      - 'cover-letter.html'
+      - 'interview-brief.html'
+      - '120-day-plan.html'
+      - 'ai-operating-precedent.html'
+      - 'README.md'
+      - 'brand-intelligence.md'
+      - 'campaign-audit.md'
 
 permissions:
   contents: write
@@ -15,38 +26,33 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Check out release branch
+      - name: Check out reviewed source
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Verify and expand reviewed source
+      - name: Verify readable source
         shell: bash
         run: |
           set -euo pipefail
-          cat .release/v3.part* > /tmp/ontra-source.b64
-          base64 --decode /tmp/ontra-source.b64 > /tmp/ontra-source.tar.gz
-          echo "$(cat .release/source.sha256)  /tmp/ontra-source.tar.gz" | sha256sum -c -
-          mkdir -p /tmp/campaign/assets/brand /tmp/campaign/docs
-          tar -xzf /tmp/ontra-source.tar.gz -C /tmp/campaign
-          cp assets/brand/ontra-horizontal-black.png /tmp/campaign/assets/brand/ontra-horizontal-black.png
           for path in \
             index.html app.js styles.css brand-tokens.css documents.css \
             resume.html cover-letter.html interview-brief.html 120-day-plan.html ai-operating-precedent.html \
-            README.md brand-intelligence.md campaign-audit.md; do
-            test -s "/tmp/campaign/$path"
+            README.md brand-intelligence.md campaign-audit.md \
+            assets/brand/ontra-horizontal-black.png; do
+            test -s "$path"
           done
+          mkdir -p docs
 
-      - name: Generate PDFs from the reviewed HTML
+      - name: Generate PDFs from reviewed HTML
         shell: bash
         run: |
           set -euo pipefail
-          cd /tmp
           npm init -y >/dev/null 2>&1
           npm install playwright@1.55.0 >/dev/null 2>&1
           npx playwright install --with-deps chromium >/dev/null
-          python3 -m http.server 4173 --directory /tmp/campaign >/tmp/ontra-http.log 2>&1 &
+          python3 -m http.server 4173 --directory . >/tmp/ontra-http.log 2>&1 &
           server_pid=$!
           trap 'kill $server_pid || true' EXIT
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break; sleep 1; done
@@ -64,13 +70,13 @@ jobs:
             const page = await browser.newPage();
             for (const [route, filename] of jobs) {
               await page.goto(`http://127.0.0.1:4173/${route}`, {waitUntil: 'networkidle'});
-              await page.pdf({path: `/tmp/campaign/docs/${filename}`, printBackground: true, preferCSSPageSize: true, margin: {top: '0', right: '0', bottom: '0', left: '0'}});
+              await page.pdf({path: `docs/${filename}`, printBackground: true, preferCSSPageSize: true, margin: {top: '0', right: '0', bottom: '0', left: '0'}});
             }
             await browser.close();
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
           node /tmp/generate-pdfs.js
-          for pdf in /tmp/campaign/docs/*.pdf; do test -s "$pdf"; done
+          for pdf in docs/*.pdf; do test -s "$pdf"; done
 
       - name: Verify PDF contracts
         shell: bash
@@ -78,21 +84,20 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq poppler-utils
-          test "$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-Resume.pdf | awk '/Pages:/{print $2}')" = "2"
-          test "$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-Cover-Letter.pdf | awk '/Pages:/{print $2}')" = "1"
-          test "$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf | awk '/Pages:/{print $2}')" = "2"
-          test "$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-120-Day-Plan.pdf | awk '/Pages:/{print $2}')" = "2"
-          test "$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Pages:/{print $2}')" = "1"
-          width=$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Page size:/{print $3}')
-          height=$(pdfinfo /tmp/campaign/docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Page size:/{print $5}')
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Resume.pdf | awk '/Pages:/{print $2}')" = "2"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Cover-Letter.pdf | awk '/Pages:/{print $2}')" = "1"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf | awk '/Pages:/{print $2}')" = "2"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-120-Day-Plan.pdf | awk '/Pages:/{print $2}')" = "2"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Pages:/{print $2}')" = "1"
+          width=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Page size:/{print $3}')
+          height=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Page size:/{print $5}')
           awk -v w="$width" -v h="$height" 'BEGIN { exit !(w > h) }'
 
-      - name: Publish readable campaign to main
+      - name: Publish corrected source and PDFs to main
         shell: bash
         run: |
           set -euo pipefail
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a /tmp/campaign/. .
+          rm -rf .release
           touch .nojekyll
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
