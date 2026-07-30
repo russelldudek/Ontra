@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.release/v2.part*'
+      - '.release/v3.part*'
       - '.release/source.sha256'
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .release/v2.part* > /tmp/ontra-source.b64
+          cat .release/v3.part* > /tmp/ontra-source.b64
           base64 --decode /tmp/ontra-source.b64 > /tmp/ontra-source.tar.gz
           echo "$(cat .release/source.sha256)  /tmp/ontra-source.tar.gz" | sha256sum -c -
           mkdir -p /tmp/campaign/assets/brand /tmp/campaign/docs
@@ -95,7 +95,7 @@ jobs:
           cp -a /tmp/campaign/. .
           touch .nojekyll
           git config user.name 'github-actions[bot]'
-          git config user.email '418982816+github-actions[bot]@users.noreply.github.com'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git commit -m 'Publish corrected Ontra candidate campaign'
           git push origin HEAD:main
