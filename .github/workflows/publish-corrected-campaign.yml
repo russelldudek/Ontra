@@ -1,0 +1,53 @@
+name: Publish corrected candidate campaign
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.release/ontra.part*'
+      - '.release/release.sha256'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify release package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .release/ontra.part* > /tmp/ontra-release.b64
+          base64 --decode /tmp/ontra-release.b64 > /tmp/ontra-release.tar.gz
+          echo "$(cat .release/release.sha256)  /tmp/ontra-release.tar.gz" | sha256sum -c -
+          tar -tzf /tmp/ontra-release.tar.gz > /tmp/ontra-manifest.txt
+          for path in \
+            index.html app.js styles.css brand-tokens.css documents.css \
+            resume.html cover-letter.html interview-brief.html 120-day-plan.html ai-operating-precedent.html \
+            docs/Russell-Dudek-Ontra-Resume.pdf \
+            docs/Russell-Dudek-Ontra-Cover-Letter.pdf \
+            docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf \
+            docs/Russell-Dudek-Ontra-120-Day-Plan.pdf \
+            docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf; do
+            grep -Fxq "$path" /tmp/ontra-manifest.txt
+          done
+
+      - name: Publish readable campaign to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          tar -xzf /tmp/ontra-release.tar.gz -C .
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Publish corrected Ontra candidate campaign'
+          git push origin HEAD:main
