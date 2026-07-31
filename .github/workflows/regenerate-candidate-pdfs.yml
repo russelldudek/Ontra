@@ -1,0 +1,103 @@
+name: Regenerate candidate PDFs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+    paths:
+      - '.pdf-release-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out candidate source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Install rendering tools
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          python -m pip install --quiet pymupdf
+
+      - name: Generate PDFs from current HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs
+          python3 -m http.server 4173 --directory . >/tmp/ontra-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid || true' EXIT
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break; sleep 1; done
+          cat >/tmp/generate-pdfs.js <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage();
+            const jobs = [
+              ['resume.html','docs/Russell-Dudek-Ontra-Resume.pdf'],
+              ['cover-letter.html','docs/Russell-Dudek-Ontra-Cover-Letter.pdf'],
+              ['interview-brief.html','docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf'],
+              ['120-day-plan.html','docs/Russell-Dudek-Ontra-120-Day-Plan.pdf'],
+              ['ai-operating-precedent.html','docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf']
+            ];
+            for (const [route, output] of jobs) {
+              await page.goto(`http://127.0.0.1:4173/${route}`, {waitUntil:'networkidle'});
+              await page.pdf({path:output, printBackground:true, preferCSSPageSize:true, margin:{top:'0',right:'0',bottom:'0',left:'0'}});
+            }
+            await browser.close();
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE
+          node /tmp/generate-pdfs.js
+
+      - name: Verify PDF contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Resume.pdf | awk '/Pages:/{print $2}')" = '2'
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Cover-Letter.pdf | awk '/Pages:/{print $2}')" = '1'
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf | awk '/Pages:/{print $2}')" = '2'
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-120-Day-Plan.pdf | awk '/Pages:/{print $2}')" = '2'
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Pages:/{print $2}')" = '1'
+          width=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Page size:/{print $3}')
+          height=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Page size:/{print $5}')
+          awk -v w="$width" -v h="$height" 'BEGIN { exit !(w > h) }'
+          python - <<'PY'
+          import fitz, glob, re
+          for path in glob.glob('docs/*.pdf'):
+              document = fitz.open(path)
+              sizes, text = [], []
+              for page in document:
+                  text.append(page.get_text())
+                  for block in page.get_text('dict')['blocks']:
+                      for line in block.get('lines', []):
+                          for span in line.get('spans', []):
+                              if span['text'].strip(): sizes.append(span['size'])
+              if min(sizes, default=99) < 7.9:
+                  raise SystemExit(f'{path}: minimum type {min(sizes)}')
+              if re.search(r'role[\s-]*forge', '\n'.join(text), re.I):
+                  raise SystemExit(f'{path}: prohibited internal term')
+          PY
+
+      - name: Publish PDFs to main and remove one-time machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf
+          rm -f docs/README.md .pdf-release-trigger .github/workflows/regenerate-candidate-pdfs.yml
+          rm -rf node_modules package.json package-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Publish current Ontra application PDFs'
+          git push origin HEAD:main
