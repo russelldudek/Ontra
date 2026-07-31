@@ -58,7 +58,7 @@ jobs:
             await browser.close();
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
-          node /tmp/generate-pdfs.js
+          NODE_PATH="$PWD/node_modules" node /tmp/generate-pdfs.js
 
       - name: Verify PDF contracts
         shell: bash
