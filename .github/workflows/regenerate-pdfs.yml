@@ -1,0 +1,73 @@
+name: Regenerate campaign PDFs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'documents.css'
+      - 'styles.css'
+      - 'brand-tokens.css'
+      - '.github/workflows/regenerate-pdfs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  pdfs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium
+      - name: Generate PDFs
+        run: |
+          python3 -m http.server 4173 >/tmp/ontra-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid || true' EXIT
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break; sleep 1; done
+          mkdir -p docs
+          cat > /tmp/generate.js <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage();
+            const jobs = [
+              ['resume.html','Russell-Dudek-Ontra-Resume.pdf'],
+              ['cover-letter.html','Russell-Dudek-Ontra-Cover-Letter.pdf'],
+              ['interview-brief.html','Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf'],
+              ['120-day-plan.html','Russell-Dudek-Ontra-120-Day-Plan.pdf'],
+              ['ai-operating-precedent.html','Russell-Dudek-Ontra-AI-Operating-Precedent.pdf']
+            ];
+            for (const [route, file] of jobs) {
+              await page.goto(`http://127.0.0.1:4173/${route}`, {waitUntil:'networkidle'});
+              await page.pdf({path:`docs/${file}`, printBackground:true, preferCSSPageSize:true, margin:{top:'0',right:'0',bottom:'0',left:'0'}});
+            }
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE
+          node /tmp/generate.js
+      - name: Verify page counts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Resume.pdf | awk '/Pages:/{print $2}')" = "2"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Cover-Letter.pdf | awk '/Pages:/{print $2}')" = "1"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf | awk '/Pages:/{print $2}')" = "2"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-120-Day-Plan.pdf | awk '/Pages:/{print $2}')" = "2"
+          test "$(pdfinfo docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf | awk '/Pages:/{print $2}')" = "1"
+      - name: Commit regenerated PDFs
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/*.pdf
+          git diff --cached --quiet && exit 0
+          git commit -m 'Regenerate corrected campaign PDFs [pdf-bot]'
+          git push
