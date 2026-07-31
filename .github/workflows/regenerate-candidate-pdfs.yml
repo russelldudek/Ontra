@@ -104,16 +104,21 @@ jobs:
                   raise SystemExit(f'{path}: prohibited internal term')
           PY
 
-      - name: Publish PDFs to main and remove one-time machinery
+      - name: Publish PDFs on the current main tree
         shell: bash
         run: |
           set -euo pipefail
-          rm -f docs/README.md .pdf-release-trigger .github/workflows/regenerate-candidate-pdfs.yml
-          rm -rf node_modules package.json package-lock.json
+          rm -rf /tmp/verified-pdfs
+          mkdir -p /tmp/verified-pdfs
+          cp docs/*.pdf /tmp/verified-pdfs/
+          git fetch origin main
+          git reset --hard origin/main
+          rm -f docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf
+          rm -f docs/README.md .github/workflows/regenerate-candidate-pdfs.yml
+          mkdir -p docs
+          cp /tmp/verified-pdfs/*.pdf docs/
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git commit -m 'Publish current Ontra application PDFs'
-          git fetch origin main
-          git rebase origin/main
           git push origin HEAD:main
