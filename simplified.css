@@ -1,0 +1,13 @@
+/* One-control correction: removes dashboard-like control banks and gives the record the full stage. */
+.simplified-lab{display:block;border:1px solid #3b4052;background:#151a2d}
+.simplified-lab .precedent-record{padding:clamp(24px,3vw,42px)}
+.record-kicker{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-bottom:16px;margin-bottom:2px;border-bottom:1px solid #3b4052;color:#9da1b2;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.record-kicker strong{color:var(--cyan);font-size:11px}
+.simplified-lab .record-header{padding-top:24px}
+.simplified-lab .record-summary{max-width:1000px;font-size:17px;margin:20px 0 24px}
+.simplified-lab .record-grid article{min-height:132px}
+.simplified-lab .record-footer{grid-template-columns:.7fr 1.5fr auto;align-items:end}
+.next-precedent{min-width:190px;min-height:48px;padding:0 18px;border:1px solid var(--coral);background:var(--coral);color:#fff;border-radius:6px;font:750 14px/1 "Avenir Next","Segoe UI",Arial,sans-serif;cursor:pointer}
+.next-precedent:hover{filter:brightness(1.06)}
+.simplified-lab .control-note{margin:22px 0 0;color:#9398aa;font-size:11px}
+@media(max-width:760px){.record-kicker{align-items:flex-start;flex-direction:column;gap:6px}.simplified-lab .record-footer{grid-template-columns:1fr}.next-precedent{width:100%;margin-top:8px}.simplified-lab .record-summary{font-size:15px}}
