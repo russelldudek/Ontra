@@ -1,0 +1,44 @@
+name: Clean public publication
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+    paths:
+      - '.cleanup-release-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  clean:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Remove build-only dependencies and publish clean tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          git rm -r --ignore-unmatch node_modules package.json package-lock.json
+          rm -f .github/workflows/clean-publication.yml .cleanup-release-trigger
+          test -s index.html
+          test -s styles.css
+          test -s assets/brand/ontra-horizontal-black.png
+          test -s docs/Russell-Dudek-Ontra-Resume.pdf
+          test -s docs/Russell-Dudek-Ontra-Cover-Letter.pdf
+          test -s docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf
+          test -s docs/Russell-Dudek-Ontra-120-Day-Plan.pdf
+          test -s docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf
+          test ! -e docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Remove build-only publication dependencies'
+          git push origin HEAD:main
