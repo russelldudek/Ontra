@@ -1,5 +1,14 @@
 :root{
- --ink:#101425;--ink-2:#171c31;--paper:#f5f3f0;--white:#fff;--muted:#626879;--rule:#d8d9e1;
- --purple:#6d5ce8;--violet:#8e7cff;--cyan:#25cbd5;--coral:#ff7148;--gold:#f2b84b;--max:1240px;
- --shadow:0 24px 70px rgba(19,21,41,.14)
+  --ink:#111421;
+  --ink-2:#1d2231;
+  --paper:#f7f5f1;
+  --white:#fff;
+  --muted:#626879;
+  --rule:#d9d9de;
+  --purple:#4f46b8;
+  --violet:#6d5ce8;
+  --cyan:#18a7a7;
+  --coral:#f26f52;
+  --gold:#e8b24a;
+  --max:1240px;
 }
