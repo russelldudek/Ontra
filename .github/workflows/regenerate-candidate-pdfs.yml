@@ -35,6 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p docs
+          rm -f docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf
           python3 -m http.server 4173 --directory . >/tmp/ontra-http.log 2>&1 &
           server_pid=$!
           trap 'kill $server_pid || true' EXIT
@@ -64,17 +65,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(pdfinfo docs/Russell-Dudek-Ontra-Resume.pdf | awk '/Pages:/{print $2}')" = '2'
-          test "$(pdfinfo docs/Russell-Dudek-Ontra-Cover-Letter.pdf | awk '/Pages:/{print $2}')" = '1'
-          test "$(pdfinfo docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf | awk '/Pages:/{print $2}')" = '2'
-          test "$(pdfinfo docs/Russell-Dudek-Ontra-120-Day-Plan.pdf | awk '/Pages:/{print $2}')" = '2'
-          test "$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Pages:/{print $2}')" = '1'
-          width=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Page size:/{print $3}')
-          height=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Page size:/{print $5}')
+          expected=(
+            docs/Russell-Dudek-Ontra-Resume.pdf
+            docs/Russell-Dudek-Ontra-Cover-Letter.pdf
+            docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf
+            docs/Russell-Dudek-Ontra-120-Day-Plan.pdf
+            docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf
+          )
+          test "$(pdfinfo "${expected[0]}" | awk '/Pages:/{print $2}')" = '2'
+          test "$(pdfinfo "${expected[1]}" | awk '/Pages:/{print $2}')" = '1'
+          test "$(pdfinfo "${expected[2]}" | awk '/Pages:/{print $2}')" = '2'
+          test "$(pdfinfo "${expected[3]}" | awk '/Pages:/{print $2}')" = '2'
+          test "$(pdfinfo "${expected[4]}" | awk '/Pages:/{print $2}')" = '1'
+          width=$(pdfinfo "${expected[4]}" | awk '/Page size:/{print $3}')
+          height=$(pdfinfo "${expected[4]}" | awk '/Page size:/{print $5}')
           awk -v w="$width" -v h="$height" 'BEGIN { exit !(w > h) }'
           python - <<'PY'
-          import fitz, glob, re
-          for path in glob.glob('docs/*.pdf'):
+          import fitz, re
+          paths = [
+              'docs/Russell-Dudek-Ontra-Resume.pdf',
+              'docs/Russell-Dudek-Ontra-Cover-Letter.pdf',
+              'docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf',
+              'docs/Russell-Dudek-Ontra-120-Day-Plan.pdf',
+              'docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf',
+          ]
+          for path in paths:
               document = fitz.open(path)
               sizes, text = [], []
               for page in document:
@@ -93,7 +108,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f docs/Russell-Dudek-Ontra-AI-Operating-Precedent.pdf
           rm -f docs/README.md .pdf-release-trigger .github/workflows/regenerate-candidate-pdfs.yml
           rm -rf node_modules package.json package-lock.json
           git config user.name 'github-actions[bot]'
