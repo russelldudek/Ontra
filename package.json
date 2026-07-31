@@ -1,0 +1,26 @@
+{
+  "name": "ontra",
+  "version": "1.0.0",
+  "description": "Independent candidate vision and application materials by Russell Dudek.",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/russelldudek/Ontra.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/russelldudek/Ontra/issues"
+  },
+  "homepage": "https://github.com/russelldudek/Ontra#readme",
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

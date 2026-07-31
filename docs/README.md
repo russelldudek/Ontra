@@ -1,1 +1,0 @@
-Downloadable PDFs are generated from the candidate-facing HTML sources and verified for exact page counts and print geometry.
