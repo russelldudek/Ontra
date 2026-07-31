@@ -1,13 +1,21 @@
-/* One-control correction: removes dashboard-like control banks and gives the record the full stage. */
-.simplified-lab{display:block;border:1px solid #3b4052;background:#151a2d}
-.simplified-lab .precedent-record{padding:clamp(24px,3vw,42px)}
-.record-kicker{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-bottom:16px;margin-bottom:2px;border-bottom:1px solid #3b4052;color:#9da1b2;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
-.record-kicker strong{color:var(--cyan);font-size:11px}
-.simplified-lab .record-header{padding-top:24px}
-.simplified-lab .record-summary{max-width:1000px;font-size:17px;margin:20px 0 24px}
-.simplified-lab .record-grid article{min-height:132px}
-.simplified-lab .record-footer{grid-template-columns:.7fr 1.5fr auto;align-items:end}
-.next-precedent{min-width:190px;min-height:48px;padding:0 18px;border:1px solid var(--coral);background:var(--coral);color:#fff;border-radius:6px;font:750 14px/1 "Avenir Next","Segoe UI",Arial,sans-serif;cursor:pointer}
-.next-precedent:hover{filter:brightness(1.06)}
-.simplified-lab .control-note{margin:22px 0 0;color:#9398aa;font-size:11px}
-@media(max-width:760px){.record-kicker{align-items:flex-start;flex-direction:column;gap:6px}.simplified-lab .record-footer{grid-template-columns:1fr}.next-precedent{width:100%;margin-top:8px}.simplified-lab .record-summary{font-size:15px}}
+/* Quiet precedent correction: no controls, no status badge, no dashboard chrome. */
+.simplified-lab{display:block;border:0;background:transparent}
+.simplified-lab .precedent-record{padding:clamp(30px,5vw,70px);background:#151a2d;border:1px solid #343b50;overflow:hidden}
+.record-kicker,.record-status,.next-precedent,.control-note{display:none!important}
+.simplified-lab .record-header{display:block;padding:0;border:0}
+.simplified-lab .record-header span{display:none}
+.simplified-lab .record-header h3{max-width:900px;margin:0;font-size:clamp(34px,4.5vw,62px);line-height:1.02;letter-spacing:-.045em}
+.simplified-lab .record-summary{max-width:860px;margin:22px 0 50px;color:#c4c8d4;font-size:clamp(16px,1.5vw,20px);line-height:1.55}
+.simplified-lab .record-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:0;position:relative}
+.simplified-lab .record-grid article{position:relative;min-height:210px;padding:0 42px 0 0;border:0;background:transparent;opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease}
+.simplified-lab .record-grid article:not(:last-child)::after{content:"";position:absolute;top:14px;right:20px;width:1px;height:calc(100% - 18px);background:#3a4155}
+.simplified-lab .record-grid span{display:block;margin-bottom:20px;color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+.simplified-lab .record-grid p{max-width:330px;margin:0;color:#f1f2f6;font-size:16px;line-height:1.55}
+.simplified-lab .record-footer{display:block;margin-top:48px;padding:24px 0 0;border-top:1px solid #3a4155}
+.simplified-lab .record-footer>div:first-child{display:none!important}
+.simplified-lab .record-footer span{display:block;margin-bottom:8px;color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+.simplified-lab .record-footer b{display:block;max-width:850px;margin:0;color:#fff;font-size:clamp(18px,2vw,25px);line-height:1.35}
+.simplified-lab .record-footer button{display:none!important}
+.simplified-lab .precedent-record.is-revealed .record-grid article{opacity:1;transform:none;transition-delay:calc(var(--stage-index) * 120ms)}
+@media(max-width:760px){.simplified-lab .precedent-record{padding:28px 22px}.simplified-lab .record-summary{margin-bottom:34px}.simplified-lab .record-grid{grid-template-columns:1fr}.simplified-lab .record-grid article{min-height:auto;padding:0 0 28px;margin-bottom:28px;border-bottom:1px solid #3a4155}.simplified-lab .record-grid article:last-child{margin-bottom:0;border-bottom:0}.simplified-lab .record-grid article::after{display:none}.simplified-lab .record-grid p{max-width:none}.simplified-lab .record-footer{margin-top:34px}}
+@media(prefers-reduced-motion:reduce){.simplified-lab .record-grid article{opacity:1!important;transform:none!important;transition:none!important}}
