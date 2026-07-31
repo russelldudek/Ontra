@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.release/ontra-v3.tar.gz.b64'
+      - '.release/ontra-v3.part*'
 
 permissions:
   contents: write
@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode .release/ontra-v3.tar.gz.b64 >/tmp/ontra-v3.tar.gz
+          cat .release/ontra-v3.part* | base64 --decode >/tmp/ontra-v3.tar.gz
           echo '209a843a5a27ac906abd811bd889dcec36314059d60c9093b65083eca57bb7d7  /tmp/ontra-v3.tar.gz' | sha256sum -c -
           mkdir -p /tmp/ontra-v3
           tar -xzf /tmp/ontra-v3.tar.gz -C /tmp/ontra-v3
@@ -56,11 +56,9 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break; sleep 1; done
           cat >/tmp/audit.js <<'NODE'
           const { chromium } = require('playwright');
-          const fs = require('fs');
           (async () => {
             const browser = await chromium.launch({headless:true});
-            const viewports = [[1440,900],[1280,800],[768,1024],[390,844],[320,800]];
-            for (const [width,height] of viewports) {
+            for (const [width,height] of [[1440,900],[1280,800],[768,1024],[390,844],[320,800]]) {
               const page = await browser.newPage({viewport:{width,height}});
               const errors=[];
               page.on('pageerror', e=>errors.push(String(e)));
@@ -79,7 +77,6 @@ jobs:
               const button=page.locator('.transfer-button');
               await button.click();
               if(await button.getAttribute('aria-expanded')!=='true'||!(await page.locator('#transfer-test').isVisible())) throw new Error(`Transfer test failed at ${width}x${height}`);
-              await page.screenshot({path:`/tmp/site-${width}.png`,fullPage:true});
               await page.close();
             }
             const reduced=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
@@ -87,8 +84,7 @@ jobs:
             const states=await reduced.locator('.capability-path li').evaluateAll(els=>els.map(el=>({o:getComputedStyle(el).opacity,t:getComputedStyle(el).transform})));
             if(states.some(s=>s.o!=='1'||s.t!=='none')) throw new Error(`Reduced motion failed: ${JSON.stringify(states)}`);
             await reduced.close();
-            const documents=['resume.html','cover-letter.html','interview-brief.html','120-day-plan.html','ai-operating-precedent.html'];
-            for(const route of documents){
+            for(const route of ['resume.html','cover-letter.html','interview-brief.html','120-day-plan.html','ai-operating-precedent.html']){
               for(const [width,height] of [[1440,900],[390,844],[320,800]]){
                 const page=await browser.newPage({viewport:{width,height}});
                 await page.goto(`http://127.0.0.1:4173/${route}`,{waitUntil:'networkidle'});
@@ -98,14 +94,12 @@ jobs:
               }
             }
             const page=await browser.newPage();
-            const jobs=[
+            for(const [route,out] of [
               ['resume.html','docs/Russell-Dudek-Ontra-Resume.pdf'],
               ['cover-letter.html','docs/Russell-Dudek-Ontra-Cover-Letter.pdf'],
               ['interview-brief.html','docs/Russell-Dudek-Ontra-Interview-Thesis-Brief.pdf'],
               ['120-day-plan.html','docs/Russell-Dudek-Ontra-120-Day-Plan.pdf'],
-              ['ai-operating-precedent.html','docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf']
-            ];
-            for(const [route,out] of jobs){
+              ['ai-operating-precedent.html','docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf']]){
               await page.goto(`http://127.0.0.1:4173/${route}`,{waitUntil:'networkidle'});
               await page.pdf({path:out,printBackground:true,preferCSSPageSize:true,margin:{top:'0',right:'0',bottom:'0',left:'0'}});
             }
@@ -128,11 +122,9 @@ jobs:
           h=$(pdfinfo docs/Russell-Dudek-Ontra-AI-Capability-Charter.pdf | awk '/Page size:/{print $5}')
           awk -v w="$w" -v h="$h" 'BEGIN{exit !(w>h)}'
           python - <<'PY'
-          import fitz,glob,re,sys
+          import fitz,glob,re
           for path in glob.glob('docs/*.pdf'):
-              doc=fitz.open(path)
-              sizes=[]
-              text=[]
+              doc=fitz.open(path); sizes=[]; text=[]
               for page in doc:
                   text.append(page.get_text())
                   for block in page.get_text('dict')['blocks']:
